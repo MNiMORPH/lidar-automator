@@ -36,5 +36,5 @@ def GetESRIFileNamesNextMap(DataDirectory):
 
 if __name__ == "__main__":
 
-    DataDirectory = '/home/fionaclubb/Mississippi_LIDAR/Wisconsin/grant/'
+    DataDirectory = '/home/fionaclubb/Mississippi_LIDAR/Wisconsin/vernon/'
     GetESRIFileNamesNextMap(DataDirectory)

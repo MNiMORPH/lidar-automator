@@ -41,9 +41,9 @@ def p2gScripter(DataDirectory, Cores, UTMZone, Resolution, Hillshade=False):
 
     for n in range(Cores):
 
-        with open('pdal_Script' + str(n)+'.sh', 'w') as pdal, \
-                open('p2g_Script' + str(n)+'.sh', 'w') as p2g, \
-                    open('gdal_Script' + str(n)+'.sh', 'w') as gdal:
+        with open(DataDirectory+'pdal_Script' + str(n)+'.sh', 'w') as pdal, \
+                open(DataDirectory+'p2g_Script' + str(n)+'.sh', 'w') as p2g, \
+                    open(DataDirectory+'gdal_Script' + str(n)+'.sh', 'w') as gdal:
             print '\n Writing to pdal_Script' + str(n)+'.sh'
             print '\n Writing to p2g_Script' + str(n)+'.sh'
             print '\n Writing to gdal_Script' + str(n)+'.sh'
@@ -55,55 +55,57 @@ def p2gScripter(DataDirectory, Cores, UTMZone, Resolution, Hillshade=False):
 
             # get each las file in the directory
             for FileName in glob(DataDirectory+"*.las")[n::Cores]:
+                if not "ground" in FileName:
+                    print "filename is: " + FileName
 
-                print "filename is: " + FileName
+                    # get the name of the LAS file
+                    split_fname = FileName.split('/')
+                    split_fname = split_fname[-1]
 
-                # get the name of the LAS file
-                split_fname = FileName.split('/')
-                split_fname = split_fname[-1]
+                    # remove LAS extension from filename
+                    fname_noext = split_fname.split('.')
+                    fname_noext = fname_noext[0]
 
-                # remove LAS extension from filename
-                fname_noext = split_fname.split('.')
-                fname_noext = fname_noext[0]
+                    pdal_str = ('pdal pcl -i %s -o %s -p classify.json' % (split_fname, fname_noext+'_ground.las'))
 
-                pdal_str = ('pdal pcl -i %s -o %s -p classify.json' % (split_fname, fname_noext+'_ground.las'))
+                    SearchRadius = str(int(math.ceil(float(Resolution) * math.sqrt(2))))
+                    Resolution = str(Resolution)
 
-                SearchRadius = str(int(math.ceil(float(Resolution) * math.sqrt(2))))
-                Resolution = str(Resolution)
+                    p2g_str = ('points2grid -i %s -o %s --idw --fill_window_size=7 '
+                               '--output_format=arc --resolution=%s -r %s'
+                               % (fname_noext+'_ground.las', fname_noext+"_"+Resolution+"m", Resolution, SearchRadius))
 
-                p2g_str = ('points2grid -i %s -o %s --idw --fill_window_size=7 '
-                           '--output_format=arc --resolution=%s -r %s'
-                           % (fname_noext+'_ground.las', fname_noext, Resolution, SearchRadius))
+                    gdal_str = ("gdalwarp -t_srs \'+proj=utm +zone=%s "
+                                "+datum=WGS84\' -r cubic -of ENVI -dstnodata -9999 -ot Float32 %s.idw.asc %s_DEM.bil"
+                                % (UTMZone, fname_noext+"_"+Resolution+"m", fname_noext+"_"+Resolution+"m"))
 
-                gdal_str = ("gdalwarp -t_srs \'+proj=utm +zone=%s "
-                            "+datum=WGS84\' -r cubic -of ENVI -dstnodata -9999 -ot Float32 %s.idw.asc %s_DEM.bil"
-                            % (UTMZone, fname_noext, fname_noext))
+                    fill_str = ("gdal_fillnodata.py -md 20 -si 1 %s_DEM.bil" % (fname_noext+"_"+Resolution+"m"))
 
-                fill_str = ("gdal_fillnodata.py -md 20 -si 1 %s_DEM.bil" % (fname_noext))
+                    del_str = ('rm %s.idw.asc\n' % fname_noext+"_"+Resolution+"m")
 
-                del_str = ('rm %s.idw.asc\n' % fname_noext)
-
-                # write the commands to the 2 scripts
-                pdal.write('nice ' + pdal_str + '\n')
-                p2g.write('nice ' + p2g_str + '\n')
-                gdal.write('nice ' + gdal_str + '\n')
-                gdal.write('nice ' + fill_str + '\n')
-                gdal.write(del_str)
-                if Hillshade:
-                    hs_str = ('gdaldem hillshade -of ENVI '
-                              '%s_DEM.bil %s_HS.bil\n'
-                              % (fname_noext, fname_noext))
-                    gdal.write(hs_str)
+                    # write the commands to the 2 scripts
+                    pdal.write('nice ' + pdal_str + '\n')
+                    p2g.write('nice ' + p2g_str + '\n')
+                    gdal.write('nice ' + gdal_str + '\n')
+                    gdal.write('nice ' + fill_str + '\n')
+                    gdal.write(del_str)
+                    if Hillshade:
+                        hs_str = ('gdaldem hillshade -of ENVI '
+                                  '%s_DEM.bil %s_HS.bil\n'
+                                  % (fname_noext, fname_noext))
+                        gdal.write(hs_str)
 
     print '\tScripts successfully written.'
+
 
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 5 and len(sys.argv) != 6:
         sys.exit('\nIncorrect number of arguments.\n\nPlease enter a data'
-                 'directory, a UTM zone number, the grid resolution, and'
+                 'directory, the number of cores you want to run the script on,'
+                 'a UTM zone number, the grid resolution, and'
                  'set the hillshade flag (optional). Run with: '
-                 'las2dem_generator.py /path/to/folder/ 10 2 True\n')
+                 'las2dem_generator.py /path/to/folder/ 4 10 2 True\n')
 
     if (len(sys.argv) == 6):
         p2gScripter(sys.argv[1], int(sys.argv[2]), sys.argv[3], sys.argv[4], int(sys.argv[5]))
