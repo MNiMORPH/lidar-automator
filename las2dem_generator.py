@@ -81,7 +81,7 @@ def p2gScripter(DataDirectory, Cores, UTMZone, Resolution, Hillshade=False):
 
                     fill_str = ("gdal_fillnodata.py -md 20 -si 1 %s_DEM.bil" % (fname_noext+"_"+Resolution+"m"))
 
-                    del_str = ('rm %s.idw.asc\n' % fname_noext+"_"+Resolution+"m")
+                    del_str = ('rm %s.idw.asc\n' % (fname_noext+"_"+Resolution+"m"))
 
                     # write the commands to the 2 scripts
                     pdal.write('nice ' + pdal_str + '\n')
