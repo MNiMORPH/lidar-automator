@@ -114,7 +114,7 @@ def gdalScripter(DataDirectory, Cores, UTMZone, Resolution, InputType='tif', Hil
     Author: FJC
     """
     # get total number of files
-    n_files =  len([name for name in os.listdir(DataDirectory) if InputType in name])
+    n_files =  len([name for name in os.listdir(DataDirectory) if name.endswith(InputType)])
     print n_files
 
     for n in range(Cores):
@@ -138,19 +138,11 @@ def gdalScripter(DataDirectory, Cores, UTMZone, Resolution, InputType='tif', Hil
                 fname_noext = fname_noext[0]
 
                 gdal_str = ("gdalwarp -t_srs \'+proj=utm +zone=%s "
-                            "+datum=WGS84\' -r cubic -of ENVI -dstnodata -9999 -ot Float32 %s.idw.asc %s_DEM.bil"
-                            % (UTMZone, fname_noext+"_"+Resolution+"m", fname_noext+"_"+Resolution+"m"))
-
-                fill_str = ("gdal_fillnodata.py -md 20 -si 1 %s_DEM.bil" % (fname_noext+"_"+Resolution+"m"))
-
-                del_str = ('rm %s.idw.asc\n' % (fname_noext+"_"+Resolution+"m"))
+                            "+datum=WGS84\' -r cubic -of ENVI -dstnodata -9999 -ot Float32 %s %s"
+                            % (UTMZone, split_fname, fname_noext+'.bil'))
 
                 # write the commands to the 2 scripts
-                pdal.write('nice ' + pdal_str + '\n')
-                p2g.write('nice ' + p2g_str + '\n')
                 gdal.write('nice ' + gdal_str + '\n')
-                gdal.write('nice ' + fill_str + '\n')
-                gdal.write(del_str)
                 if Hillshade:
                     hs_str = ('gdaldem hillshade -of ENVI '
                               '%s_DEM.bil %s_HS.bil\n'
