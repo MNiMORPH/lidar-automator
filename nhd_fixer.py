@@ -10,7 +10,6 @@ FJC
 """
 
 import fiona
-from shapely.geometry import shape, mapping
 
 def filter_shapefile(DataDirectory, shapefile, string):
     """
@@ -18,22 +17,24 @@ def filter_shapefile(DataDirectory, shapefile, string):
     with the specific name defined by the string
     """
 
-    lines = []
+    print("Loading the shapefile...")
+    split_fname = string.split(" ")
+    output_shp = 'NHD_'+split_fname[0]+'.shp'
     with fiona.open(DataDirectory+shapefile) as input:
-        for multi in input:
-            #print multi
-            chan_name = multi['properties']['GNIS_NAME']
-            print chan_name
-            if chan_name == string:
-                lines.append(multi.geometries)
-            # this_output_name = 'catchment_'+str(catchment_id)+'.shp'
-            # with fiona.open(DataDirectory+this_output_name, 'w', driver=input.driver, crs=input.crs,schema=input.schema) as output:
-            #     output.write({'properties': multi['properties'], 'geometry': mapping(shape(multi['geometry']))})
+        schema = input.schema
+        with fiona.open(DataDirectory+output_shp, 'w',driver=input.driver, crs=input.crs,schema=schema) as output:
+            for multi in input:
+                #print multi
+                chan_name = multi['properties']['GNIS_NAME']
+                if chan_name == string:
+                    output.write(multi)
+
+    print("Done!")
 
 
 if __name__ == '__main__':
 
-    DataDirectory = '/media/fionaclubb/Seagate Backup Plus Drive/Shapefiles/National_Hydrography_Dataset/Minnesota/Shape/'
+    DataDirectory = '/home/s0923330/MN_postdoc/Mississippi_terraces/National_Hydrography_Dataset/Minnesota/Shape/'
     shapefile = 'NHDFlowline.shp'
     river_name = 'Mississippi River'
     filter_shapefile(DataDirectory,shapefile,river_name)
