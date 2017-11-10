@@ -138,8 +138,8 @@ def gdalScripter(DataDirectory, Cores, UTMZone, Resolution, InputType='tif', Hil
                 fname_noext = fname_noext[0]
 
                 gdal_str = ("gdalwarp -t_srs \'+proj=utm +zone=%s "
-                            "+datum=WGS84\' -r cubic -of ENVI -dstnodata -9999 -ot Float32 %s %s"
-                            % (UTMZone, split_fname, fname_noext+'.bil'))
+                            "+datum=WGS84\' -r cubic -of ENVI -tr %s %s -dstnodata -9999 -ot Float32 %s %s"
+                            % (UTMZone, str(Resolution), str(Resolution), split_fname, fname_noext+'.bil'))
 
                 # write the commands to the 2 scripts
                 gdal.write('nice ' + gdal_str + '\n')
